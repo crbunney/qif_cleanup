@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
-import sys
 import argparse
+import re
+import sys
 
 
 def parse_args():
@@ -13,19 +14,27 @@ def parse_args():
     return parser.parse_args()
 
 
+line_pattern = re.compile(r', \d+\.\d+$')
+
+
 def clean_line(line):
     """
-
-    :param str line:
-    :return:
+    :param str line: The line to clean
+    :return: The cleaned line, ready for output
     :rtype str
     """
     if not line.startswith('P') or ',' not in line:
         return line.strip()
 
     try:
-        s1 = line.split(',')[2].strip()
-        return 'P' + (s1.split(',')[0] if ',' in s1 else s1)
+        if line_pattern.search(line):  # One source requires a different approach to another
+            cleaned_line = line.strip().rsplit(',', 1)[0]
+            if cleaned_line.startswith('PCASH WITHDRAWAL') or cleaned_line.startswith('PCARD PAYMENT'):
+                cleaned_line = cleaned_line.rsplit(',', 2)[0]
+            return cleaned_line
+        else:
+            s1 = line.split(',')[2].strip()
+            return 'P' + (s1.split(',')[0] if ',' in s1 else s1)
     except IndexError:
         print('ERROR on "' + line + '"', file=sys.stderr)
         raise Exception('Not expected format: {}'.format(line))
@@ -37,26 +46,3 @@ def main():
     with open(args.qif_file, 'r') as qiffile:
         for line in qiffile:
             print(clean_line(line))
-
-
-def old():
-    filepath_to_clean = sys.argv[1]
-
-    qiffile = open(filepath_to_clean)
-
-    for line in qiffile:
-        cleaned_line = ''
-        if line.startswith('P'):
-
-            try:
-                if line.startswith('PDD PAYMENT RECEIVED'):
-                    cleaned_line = line.split(',')[0].strip()
-                elif line.startswith('PPURCHASE'):
-                    s1 = line.split(',')[2].strip()
-                    cleaned_line = s1.split(',')[0] if ',' in s1 else s1
-            except IndexError:
-                print('ERROR on "' + line.strip() + '"', file=sys.stderr)
-                raise Exception('Not expected format: PPURCHASE - DOMESTIC, PLYMOUTH, SUBWAY, GBP 10.99')
-            print('P' + cleaned_line)
-        else:
-            print(line.strip())
