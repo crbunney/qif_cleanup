@@ -28,16 +28,22 @@ def clean_line(line):
 
     try:
         if line_pattern.search(line):  # One source requires a different approach to another
+            # TODO: Examples of what matches would be helpful when coming back to this code...
             cleaned_line = line.strip().rsplit(',', 1)[0]
             if cleaned_line.startswith('PCASH WITHDRAWAL') or cleaned_line.startswith('PCARD PAYMENT'):
                 cleaned_line = cleaned_line.rsplit(',', 2)[0]
             return cleaned_line
         else:
-            s1 = line.split(',')[2].strip()
+            comma_count = line.count(',')
+            if comma_count == 1:  # 'PDD PAYMENT RECEIVED  D/DEBIT, GBP -12.34'
+                s1 = line.split(',')[0].strip()
+                s1 = s1[1:]  # remove leading P, it's added back on the return statement
+            else:
+                s1 = line.split(',')[2].strip()
             return 'P' + (s1.split(',')[0] if ',' in s1 else s1)
     except IndexError:
         print('ERROR on "' + line + '"', file=sys.stderr)
-        raise Exception('Not expected format: {}'.format(line))
+        raise Exception('Not expected format: "{}"'.format(line))
 
 
 def main():
